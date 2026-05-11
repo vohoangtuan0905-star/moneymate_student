@@ -1,6 +1,15 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
-void main() {
+import 'firebase_options.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(const MoneyMateStudentApp());
 }
 
@@ -74,7 +83,7 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 24),
                   Text(
-                    'Ngày 1: Khởi tạo dự án',
+                    'Ngày 2: Đã kết nối Firebase',
                     style: TextStyle(
                       fontSize: 15,
                       color: Colors.black54,
