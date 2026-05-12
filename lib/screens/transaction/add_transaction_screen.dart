@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../models/transaction_model.dart';
+import '../../services/transaction_service.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_text_field.dart';
 
@@ -13,6 +14,8 @@ class AddTransactionScreen extends StatefulWidget {
 }
 
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
+  final TransactionService _transactionService = TransactionService();
+
   final _formKey = GlobalKey<FormState>();
 
   final _amountController = TextEditingController();
@@ -113,35 +116,48 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       _isLoading = true;
     });
 
-    await Future.delayed(const Duration(milliseconds: 700));
+    try {
+      final TransactionModel transaction = TransactionModel(
+        id: '',
+        userId: currentUser.uid,
+        type: _selectedType,
+        amount: double.parse(_amountController.text.trim()),
+        category: _selectedCategory,
+        note: _noteController.text.trim(),
+        date: _selectedDate,
+        createdAt: DateTime.now(),
+      );
 
-    final TransactionModel transaction = TransactionModel(
-      id: '',
-      userId: currentUser.uid,
-      type: _selectedType,
-      amount: double.parse(_amountController.text.trim()),
-      category: _selectedCategory,
-      note: _noteController.text.trim(),
-      date: _selectedDate,
-      createdAt: DateTime.now(),
-    );
+      await _transactionService.addTransaction(transaction);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Đã tạo giao dịch tạm: ${transaction.isIncome ? 'Thu' : 'Chi'} ${transaction.amount.toStringAsFixed(0)}đ. Ngày 6 sẽ lưu vào Firestore.',
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Đã lưu ${transaction.isIncome ? 'khoản thu' : 'khoản chi'} vào Firestore.',
+          ),
+          backgroundColor: Colors.green,
         ),
-        backgroundColor: Colors.green,
-      ),
-    );
+      );
 
-    Navigator.pop(context);
+      Navigator.pop(context);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi khi lưu giao dịch: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   String? _validateAmount(String? value) {

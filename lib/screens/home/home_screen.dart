@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import '../../screens/transaction/add_transaction_screen.dart';
 import '../../services/auth_service.dart';
+import '../transaction/add_transaction_screen.dart';
+import '../transaction/transaction_list_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -31,6 +32,15 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  void _goToTransactionList(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const TransactionListScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final User? user = FirebaseAuth.instance.currentUser;
@@ -49,13 +59,6 @@ class HomeScreen extends StatelessWidget {
             tooltip: 'Đăng xuất',
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _goToAddTransaction(context),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Thêm giao dịch'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -136,15 +139,53 @@ class HomeScreen extends StatelessWidget {
               color: Colors.blue,
             ),
             const SizedBox(height: 24),
-            _buildEmptyTransactionBox(),
-            const SizedBox(height: 80),
+            _buildActionButtons(context),
+            const SizedBox(height: 16),
+            _buildTransactionInfoBox(),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildEmptyTransactionBox() {
+  Widget _buildActionButtons(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: ElevatedButton.icon(
+            onPressed: () => _goToAddTransaction(context),
+            icon: const Icon(Icons.add),
+            label: const Text('Thêm'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
+            onPressed: () => _goToTransactionList(context),
+            icon: const Icon(Icons.receipt_long),
+            label: const Text('Danh sách'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.green,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTransactionInfoBox() {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -155,13 +196,14 @@ class HomeScreen extends StatelessWidget {
         child: Column(
           children: [
             Icon(
-              Icons.receipt_long,
+              Icons.cloud_done,
               size: 64,
-              color: Colors.grey,
+              color: Colors.green,
             ),
             SizedBox(height: 12),
             Text(
-              'Chưa có giao dịch',
+              'Dữ liệu lưu trên Cloud Firestore',
+              textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -169,7 +211,7 @@ class HomeScreen extends StatelessWidget {
             ),
             SizedBox(height: 8),
             Text(
-              'Bấm nút "Thêm giao dịch" để tạo khoản thu hoặc khoản chi đầu tiên. Ngày 6 dữ liệu sẽ được lưu vào Cloud Firestore.',
+              'Bấm nút "Thêm" để tạo giao dịch mới hoặc bấm "Danh sách" để xem các khoản thu chi đã lưu trên cơ sở dữ liệu đám mây.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
