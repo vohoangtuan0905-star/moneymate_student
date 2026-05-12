@@ -1,10 +1,40 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+
+import '../../screens/transaction/add_transaction_screen.dart';
+import '../../services/auth_service.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  Future<void> _handleLogout(BuildContext context) async {
+    final AuthService authService = AuthService();
+
+    await authService.logout();
+
+    if (!context.mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Đã đăng xuất.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  }
+
+  void _goToAddTransaction(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddTransactionScreen(),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final User? user = FirebaseAuth.instance.currentUser;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8F5),
       appBar: AppBar(
@@ -12,8 +42,22 @@ class HomeScreen extends StatelessWidget {
         centerTitle: true,
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            onPressed: () => _handleLogout(context),
+            icon: const Icon(Icons.logout),
+            tooltip: 'Đăng xuất',
+          ),
+        ],
       ),
-      body: Padding(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => _goToAddTransaction(context),
+        backgroundColor: Colors.green,
+        foregroundColor: Colors.white,
+        icon: const Icon(Icons.add),
+        label: const Text('Thêm giao dịch'),
+      ),
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
@@ -22,27 +66,36 @@ class HomeScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Padding(
-                padding: EdgeInsets.all(24),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.account_balance_wallet,
                       size: 80,
                       color: Colors.green,
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     Text(
-                      'Trang chủ MoneyMate Student',
+                      'Xin chào, ${user?.displayName ?? 'Sinh viên'}',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     Text(
-                      'Màn hình này sẽ hiển thị tổng thu, tổng chi, số dư và danh sách giao dịch trong các ngày tiếp theo.',
+                      user?.email ?? '',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black54,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Theo dõi thu chi cá nhân, quản lý số dư và chuyển đổi tiền tệ bằng API bên thứ ba.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 15,
@@ -81,6 +134,48 @@ class HomeScreen extends StatelessWidget {
               value: '0đ',
               icon: Icons.savings,
               color: Colors.blue,
+            ),
+            const SizedBox(height: 24),
+            _buildEmptyTransactionBox(),
+            const SizedBox(height: 80),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyTransactionBox() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: const Padding(
+        padding: EdgeInsets.all(24),
+        child: Column(
+          children: [
+            Icon(
+              Icons.receipt_long,
+              size: 64,
+              color: Colors.grey,
+            ),
+            SizedBox(height: 12),
+            Text(
+              'Chưa có giao dịch',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Bấm nút "Thêm giao dịch" để tạo khoản thu hoặc khoản chi đầu tiên. Ngày 6 dữ liệu sẽ được lưu vào Cloud Firestore.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.4,
+                color: Colors.black54,
+              ),
             ),
           ],
         ),
