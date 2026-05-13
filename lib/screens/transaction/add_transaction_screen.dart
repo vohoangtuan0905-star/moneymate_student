@@ -7,7 +7,12 @@ import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_text_field.dart';
 
 class AddTransactionScreen extends StatefulWidget {
-  const AddTransactionScreen({super.key});
+  final TransactionModel? transaction;
+
+  const AddTransactionScreen({
+    super.key,
+    this.transaction,
+  });
 
   @override
   State<AddTransactionScreen> createState() => _AddTransactionScreenState();
@@ -45,12 +50,40 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     'Khác',
   ];
 
+  bool get _isEditMode {
+    return widget.transaction != null;
+  }
+
   List<String> get _currentCategories {
     if (_selectedType == 'income') {
       return _incomeCategories;
     }
 
     return _expenseCategories;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    final TransactionModel? transaction = widget.transaction;
+
+    if (transaction != null) {
+      _selectedType = transaction.type;
+      _selectedDate = transaction.date;
+      _amountController.text = transaction.amount.toStringAsFixed(0);
+      _noteController.text = transaction.note;
+
+      if (_selectedType == 'income') {
+        _selectedCategory = _incomeCategories.contains(transaction.category)
+            ? transaction.category
+            : _incomeCategories.first;
+      } else {
+        _selectedCategory = _expenseCategories.contains(transaction.category)
+            ? transaction.category
+            : _expenseCategories.first;
+      }
+    }
   }
 
   @override
@@ -105,7 +138,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Bạn cần đăng nhập trước khi thêm giao dịch.'),
+          content: Text('Bạn cần đăng nhập trước khi lưu giao dịch.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -118,24 +151,30 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
     try {
       final TransactionModel transaction = TransactionModel(
-        id: '',
+        id: widget.transaction?.id ?? '',
         userId: currentUser.uid,
         type: _selectedType,
         amount: double.parse(_amountController.text.trim()),
         category: _selectedCategory,
         note: _noteController.text.trim(),
         date: _selectedDate,
-        createdAt: DateTime.now(),
+        createdAt: widget.transaction?.createdAt ?? DateTime.now(),
       );
 
-      await _transactionService.addTransaction(transaction);
+      if (_isEditMode) {
+        await _transactionService.updateTransaction(transaction);
+      } else {
+        await _transactionService.addTransaction(transaction);
+      }
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Đã lưu ${transaction.isIncome ? 'khoản thu' : 'khoản chi'} vào Firestore.',
+            _isEditMode
+                ? 'Đã cập nhật giao dịch thành công.'
+                : 'Đã lưu ${transaction.isIncome ? 'khoản thu' : 'khoản chi'} vào Firestore.',
           ),
           backgroundColor: Colors.green,
         ),
@@ -207,7 +246,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8F5),
       appBar: AppBar(
-        title: const Text('Thêm giao dịch'),
+        title: Text(_isEditMode ? 'Sửa giao dịch' : 'Thêm giao dịch'),
         centerTitle: true,
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
@@ -272,7 +311,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         _buildDatePicker(),
                         const SizedBox(height: 24),
                         CustomButton(
-                          text: 'Lưu giao dịch',
+                          text: _isEditMode
+                              ? 'Cập nhật giao dịch'
+                              : 'Lưu giao dịch',
                           isLoading: _isLoading,
                           onPressed: _handleSaveTransaction,
                           backgroundColor: Colors.green,

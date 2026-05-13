@@ -4,10 +4,14 @@ import '../../models/transaction_model.dart';
 
 class TransactionCard extends StatelessWidget {
   final TransactionModel transaction;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
 
   const TransactionCard({
     super.key,
     required this.transaction,
+    this.onEdit,
+    this.onDelete,
   });
 
   String _formatMoney(double amount) {
@@ -83,13 +87,67 @@ class TransactionCard extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            Text(
-              '${isIncome ? '+' : '-'}${_formatMoney(transaction.amount)}',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '${isIncome ? '+' : '-'}${_formatMoney(transaction.amount)}',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                PopupMenuButton<String>(
+                  padding: EdgeInsets.zero,
+                  icon: const Icon(
+                    Icons.more_vert,
+                    size: 22,
+                  ),
+                  onSelected: (String value) {
+                    if (value == 'edit') {
+                      onEdit?.call();
+                    }
+
+                    if (value == 'delete') {
+                      onDelete?.call();
+                    }
+                  },
+                  itemBuilder: (context) {
+                    return const [
+                      PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.edit,
+                              size: 20,
+                              color: Colors.blue,
+                            ),
+                            SizedBox(width: 8),
+                            Text('Sửa'),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.delete,
+                              size: 20,
+                              color: Colors.red,
+                            ),
+                            SizedBox(width: 8),
+                            Text('Xóa'),
+                          ],
+                        ),
+                      ),
+                    ];
+                  },
+                ),
+              ],
             ),
           ],
         ),

@@ -9,6 +9,82 @@ import 'add_transaction_screen.dart';
 class TransactionListScreen extends StatelessWidget {
   const TransactionListScreen({super.key});
 
+  Future<void> _deleteTransaction({
+    required BuildContext context,
+    required TransactionService transactionService,
+    required TransactionModel transaction,
+  }) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Xóa giao dịch'),
+          content: const Text(
+            'Bạn có chắc chắn muốn xóa giao dịch này không?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('Xóa'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    try {
+      await transactionService.deleteTransaction(transaction.id);
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Đã xóa giao dịch.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Lỗi khi xóa giao dịch: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  void _editTransaction({
+    required BuildContext context,
+    required TransactionModel transaction,
+  }) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AddTransactionScreen(
+          transaction: transaction,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final User? currentUser = FirebaseAuth.instance.currentUser;
@@ -78,8 +154,23 @@ class TransactionListScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             itemCount: transactions.length,
             itemBuilder: (context, index) {
+              final TransactionModel transaction = transactions[index];
+
               return TransactionCard(
-                transaction: transactions[index],
+                transaction: transaction,
+                onEdit: () {
+                  _editTransaction(
+                    context: context,
+                    transaction: transaction,
+                  );
+                },
+                onDelete: () {
+                  _deleteTransaction(
+                    context: context,
+                    transactionService: transactionService,
+                    transaction: transaction,
+                  );
+                },
               );
             },
           );
