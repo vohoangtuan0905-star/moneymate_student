@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../models/transaction_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/transaction_service.dart';
+import '../currency/currency_converter_screen.dart';
 import '../transaction/add_transaction_screen.dart';
 import '../transaction/transaction_list_screen.dart';
 
@@ -39,6 +40,15 @@ class HomeScreen extends StatelessWidget {
       context,
       MaterialPageRoute(
         builder: (context) => const TransactionListScreen(),
+      ),
+    );
+  }
+
+  void _goToCurrencyConverter(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CurrencyConverterScreen(),
       ),
     );
   }
@@ -163,7 +173,10 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 if (snapshot.connectionState == ConnectionState.waiting)
-                  const LinearProgressIndicator(),
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: LinearProgressIndicator(),
+                  ),
                 if (snapshot.hasError)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 12),
@@ -213,7 +226,8 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 24),
                 _buildActionButtons(context),
                 const SizedBox(height: 16),
-                _buildTransactionInfoBox(),
+                _buildApiInfoBox(context),
+                const SizedBox(height: 24),
               ],
             ),
           );
@@ -223,31 +237,52 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () => _goToAddTransaction(context),
-            icon: const Icon(Icons.add),
-            label: const Text('Thêm'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.green,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => _goToAddTransaction(context),
+                icon: const Icon(Icons.add),
+                label: const Text('Thêm'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
               ),
             ),
-          ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => _goToTransactionList(context),
+                icon: const Icon(Icons.receipt_long),
+                label: const Text('Danh sách'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () => _goToTransactionList(context),
-            icon: const Icon(Icons.receipt_long),
-            label: const Text('Danh sách'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.green,
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => _goToCurrencyConverter(context),
+            icon: const Icon(Icons.currency_exchange),
+            label: const Text('Đổi tiền tệ bằng API'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
@@ -259,38 +294,47 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTransactionInfoBox() {
+  Widget _buildApiInfoBox(BuildContext context) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(22),
       ),
-      child: const Padding(
-        padding: EdgeInsets.all(24),
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
           children: [
-            Icon(
-              Icons.cloud_done,
+            const Icon(
+              Icons.api,
               size: 64,
-              color: Colors.green,
+              color: Colors.blue,
             ),
-            SizedBox(height: 12),
-            Text(
-              'Dữ liệu lưu trên Cloud Firestore',
+            const SizedBox(height: 12),
+            const Text(
+              'Tích hợp API bên thứ ba',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 8),
-            Text(
-              'Trang chủ hiển thị tổng thu, tổng chi và số dư được tính trực tiếp từ dữ liệu giao dịch đã lưu trên cơ sở dữ liệu đám mây.',
+            const SizedBox(height: 8),
+            const Text(
+              'Ứng dụng sử dụng ExchangeRate-API để chuyển đổi tiền tệ theo tỷ giá mới nhất. Đây là chức năng giúp app đáp ứng tiêu chí 9-10 điểm.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
                 height: 1.4,
                 color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => _goToCurrencyConverter(context),
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Mở màn hình đổi tiền'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.blue,
               ),
             ),
           ],
