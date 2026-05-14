@@ -50,12 +50,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Đăng ký tài khoản thành công.'),
-          backgroundColor: Colors.green,
-        ),
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: const Text('Kiểm tra email'),
+            content: Text(
+              'Tài khoản đã được tạo.\n\nFirebase đã gửi email xác minh đến:\n${_emailController.text.trim()}\n\nVui lòng mở Gmail, bấm vào liên kết xác minh rồi quay lại đăng nhập.',
+            ),
+            actions: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                },
+                child: const Text('Đã hiểu'),
+              ),
+            ],
+          );
+        },
       );
+
+      if (!mounted) return;
 
       Navigator.pop(context);
     } catch (e) {
@@ -152,28 +172,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     children: [
                       const Center(
                         child: Icon(
-                          Icons.person_add_alt_1,
-                          size: 76,
+                          Icons.person_add,
+                          size: 78,
                           color: Colors.green,
                         ),
                       ),
-                      const SizedBox(height: 18),
-                      const Text(
-                        'Tạo tài khoản mới',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
+                      const SizedBox(height: 16),
+                      const Center(
+                        child: Text(
+                          'Tạo tài khoản mới',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Đăng ký để lưu dữ liệu thu chi của bạn trên Firebase.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.black54,
+                      const SizedBox(height: 8),
+                      const Center(
+                        child: Text(
+                          'Nhập thông tin cá nhân để bắt đầu quản lý chi tiêu.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.black54,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 22),
+                      const SizedBox(height: 24),
                       CustomTextField(
                         controller: _nameController,
                         labelText: 'Họ tên',
@@ -194,7 +220,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       CustomTextField(
                         controller: _passwordController,
                         labelText: 'Mật khẩu',
-                        hintText: 'Tối thiểu 6 ký tự',
+                        hintText: 'Nhập mật khẩu',
                         prefixIcon: Icons.lock,
                         obscureText: true,
                         validator: _validatePassword,
@@ -208,30 +234,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         obscureText: true,
                         validator: _validateConfirmPassword,
                       ),
+                      const SizedBox(height: 22),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Colors.green.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(
+                              Icons.mark_email_read,
+                              color: Colors.green,
+                            ),
+                            SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'Sau khi đăng ký, bạn cần mở email để xác minh tài khoản trước khi đăng nhập.',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.black87,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                       const SizedBox(height: 24),
                       CustomButton(
                         text: 'Đăng ký',
                         isLoading: _isLoading,
                         onPressed: _handleRegister,
+                        backgroundColor: Colors.green,
                       ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: TextButton(
-                          onPressed: _isLoading
-                              ? null
-                              : () {
-                                  Navigator.pop(context);
-                                },
-                          child: const Text(
-                            'Đã có tài khoản? Đăng nhập',
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      )
                     ],
                   ),
                 ),

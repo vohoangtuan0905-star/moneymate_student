@@ -150,7 +150,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8F5),
       appBar: AppBar(
-        title: const Text('Đổi tiền tệ'),
+        title: const Text('Chuyển đổi tiền tệ'),
         centerTitle: true,
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
@@ -199,7 +199,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
             ),
             SizedBox(height: 8),
             Text(
-              'Mặc định ứng dụng sẽ đổi từ VND sang USD, phù hợp với nhu cầu quản lý chi tiêu sinh viên tại Việt Nam.',
+              'Nhập số tiền, chọn loại tiền cần quy đổi và xem kết quả theo tỷ giá mới nhất.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 15,
@@ -296,7 +296,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
     required ValueChanged<String?> onChanged,
   }) {
     return DropdownButtonFormField<String>(
-      value: value,
+      initialValue: value,
       decoration: InputDecoration(
         labelText: label,
         filled: true,

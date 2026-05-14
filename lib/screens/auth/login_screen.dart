@@ -22,6 +22,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _isLoading = false;
   bool _isGoogleLoading = false;
+  bool _isResendingVerification = false;
 
   @override
   void dispose() {
@@ -56,9 +57,16 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
 
+      final String errorMessage = e.toString().replaceFirst('Exception: ', '');
+
+      if (errorMessage.contains('chưa xác minh email')) {
+        await _showEmailVerificationDialog(errorMessage);
+        return;
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
         ),
       );
@@ -69,6 +77,93 @@ class _LoginScreenState extends State<LoginScreen> {
         });
       }
     }
+  }
+
+  Future<void> _handleResendVerificationEmail() async {
+    if (_emailController.text.trim().isEmpty ||
+        _passwordController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Vui lòng nhập email và mật khẩu để gửi lại email xác minh.',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isResendingVerification = true;
+    });
+
+    try {
+      await _authService.resendEmailVerification(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Đã gửi lại email xác minh đến ${_emailController.text.trim()}.',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isResendingVerification = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _showEmailVerificationDialog(String message) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Cần xác minh email'),
+          content: Text(
+            '$message\n\nNếu chưa thấy email, bạn có thể kiểm tra mục Spam hoặc bấm gửi lại email xác minh.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: const Text('Đóng'),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+              ),
+              onPressed: _isResendingVerification
+                  ? null
+                  : () async {
+                      Navigator.pop(dialogContext);
+                      await _handleResendVerificationEmail();
+                    },
+              child: const Text('Gửi lại email'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _handleGoogleLogin() async {
@@ -88,11 +183,17 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } catch (e) {
+      final String errorMessage = e.toString();
+
+      if (errorMessage.contains(AuthService.googleSignInCancelledCode)) {
+        return;
+      }
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          content: Text(errorMessage.replaceFirst('Exception: ', '')),
           backgroundColor: Colors.red,
         ),
       );
@@ -131,7 +232,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isAnyLoading = _isLoading || _isGoogleLoading;
+    final bool isAnyLoading =
+        _isLoading || _isGoogleLoading || _isResendingVerification;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F8F5),
@@ -216,7 +318,24 @@ class _LoginScreenState extends State<LoginScreen> {
                             isLoading: _isLoading,
                             onPressed: isAnyLoading ? () {} : _handleLogin,
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 10),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              onPressed: isAnyLoading
+                                  ? null
+                                  : _handleResendVerificationEmail,
+                              icon: const Icon(
+                                Icons.mark_email_read,
+                                size: 18,
+                              ),
+                              label: const Text('Gửi lại email xác minh'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: Colors.green,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
                           SizedBox(
                             width: double.infinity,
                             height: 52,

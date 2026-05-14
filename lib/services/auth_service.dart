@@ -6,6 +6,8 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  static const String googleSignInCancelledCode = 'GOOGLE_SIGN_IN_CANCELLED';
+
   static const String _webClientId =
       '269471985170-f8tunf05qdkg238jgp004j6ohvil7947.apps.googleusercontent.com';
 
@@ -33,6 +35,7 @@ class AuthService {
 
       if (user != null) {
         await user.updateDisplayName(name.trim());
+        await user.sendEmailVerification();
 
         await _firestore.collection('users').doc(user.uid).set({
           'uid': user.uid,
@@ -40,8 +43,11 @@ class AuthService {
           'email': email.trim(),
           'photoUrl': user.photoURL,
           'provider': 'email_password',
+          'emailVerified': false,
           'createdAt': FieldValue.serverTimestamp(),
         });
+
+        await _auth.signOut();
       }
 
       return userCredential;
@@ -57,14 +63,83 @@ class AuthService {
     required String password,
   }) async {
     try {
-      return await _auth.signInWithEmailAndPassword(
+      final UserCredential userCredential =
+          await _auth.signInWithEmailAndPassword(
         email: email.trim(),
         password: password.trim(),
       );
+
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        await user.reload();
+
+        final User? refreshedUser = _auth.currentUser;
+
+        if (refreshedUser != null && !refreshedUser.emailVerified) {
+          await _auth.signOut();
+
+          throw Exception(
+            'Tài khoản chưa xác minh email. Vui lòng vào Gmail và bấm xác minh trước khi đăng nhập.',
+          );
+        }
+
+        await _firestore.collection('users').doc(user.uid).update({
+          'emailVerified': true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      return userCredential;
     } on FirebaseAuthException catch (e) {
       throw Exception(_getAuthErrorMessage(e.code));
     } catch (e) {
+      if (e.toString().contains('Tài khoản chưa xác minh email')) {
+        rethrow;
+      }
+
       throw Exception('Đã xảy ra lỗi khi đăng nhập: $e');
+    }
+  }
+
+  Future<void> resendEmailVerification({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final UserCredential userCredential =
+          await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
+      );
+
+      final User? user = userCredential.user;
+
+      if (user == null) {
+        throw Exception('Không tìm thấy tài khoản.');
+      }
+
+      await user.reload();
+
+      final User? refreshedUser = _auth.currentUser;
+
+      if (refreshedUser != null && refreshedUser.emailVerified) {
+        await _firestore.collection('users').doc(refreshedUser.uid).update({
+          'emailVerified': true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+
+        await _auth.signOut();
+
+        throw Exception('Email này đã được xác minh. Bạn có thể đăng nhập.');
+      }
+
+      await refreshedUser?.sendEmailVerification();
+      await _auth.signOut();
+    } on FirebaseAuthException catch (e) {
+      throw Exception(_getAuthErrorMessage(e.code));
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -97,18 +172,19 @@ class AuthService {
         if (!docSnapshot.exists) {
           await userDoc.set({
             'uid': user.uid,
-            'name': user.displayName ?? 'Người dùng Google',
+            'name': user.displayName ?? 'Người dùng',
             'email': user.email ?? '',
             'photoUrl': user.photoURL,
             'provider': 'google',
+            'emailVerified': true,
             'createdAt': FieldValue.serverTimestamp(),
           });
         } else {
           await userDoc.update({
-            'name': user.displayName ?? 'Người dùng Google',
             'email': user.email ?? '',
             'photoUrl': user.photoURL,
             'provider': 'google',
+            'emailVerified': true,
             'updatedAt': FieldValue.serverTimestamp(),
           });
         }
@@ -118,9 +194,23 @@ class AuthService {
     } on FirebaseAuthException catch (e) {
       throw Exception(_getAuthErrorMessage(e.code));
     } on GoogleSignInException catch (e) {
-      throw Exception('Lỗi Google Sign-In: ${e.code.name} - ${e.description}');
+      final String errorCode = e.code.name.toLowerCase();
+      final String errorDescription = e.description?.toLowerCase() ?? '';
+
+      if (errorCode.contains('cancel') ||
+          errorDescription.contains('cancel')) {
+        throw Exception(googleSignInCancelledCode);
+      }
+
+      throw Exception('Không thể đăng nhập bằng Google. Vui lòng thử lại.');
     } catch (e) {
-      throw Exception('Đăng nhập Google thất bại: $e');
+      final String errorMessage = e.toString().toLowerCase();
+
+      if (errorMessage.contains('cancel')) {
+        throw Exception(googleSignInCancelledCode);
+      }
+
+      throw Exception('Đăng nhập Google thất bại. Vui lòng thử lại.');
     }
   }
 
